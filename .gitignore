@@ -2,3 +2,4 @@
 spark-err.txt
 *.pdf
 *.parquet
+*.zip
