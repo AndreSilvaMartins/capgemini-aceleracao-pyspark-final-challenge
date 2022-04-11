@@ -1,0 +1,4 @@
+*.pyc
+spark-err.txt
+*.pdf
+*.parquet
