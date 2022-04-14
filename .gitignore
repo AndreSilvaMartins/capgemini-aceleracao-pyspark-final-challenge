@@ -1,5 +1,6 @@
 *.pyc
 spark-err.txt
+errs.txt
 *.pdf
 *.parquet
 *.zip
