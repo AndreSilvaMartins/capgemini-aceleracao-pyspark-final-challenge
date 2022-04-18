@@ -46,3 +46,6 @@ firefox http://127.0.0.1:8080/ &
 ## Executa o script no Spark
 spark-submit --master spark://spark:7077 capgemini-aceleracao-pyspark/scripts/<script>.py 2> /dev/null
 
+ou ainda
+
+spark-submit scripts/<script>.py 2> errs.txt > output.txt (sugestão de execução)
