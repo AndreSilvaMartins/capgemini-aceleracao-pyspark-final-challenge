@@ -3,6 +3,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 
+from pyspark.ml import stat
+
 # REGEX PATTERNS ---
 REGEX_ALPHA     = r'[a-zA-Z]+'
 REGEX_EMPTY_STR = r'[\t ]+$'
@@ -60,9 +62,9 @@ def transform_df(dataframe):
 			else:
 				data = data.withColumn(column, (
 					F.when(
-						check_empty_column(column), 0.0
+						check_empty_column(column), None
 					).when(
-						F.col(column) == '?', 0.0
+						F.col(column) == '?', None
 					).when(
 						F.col(column).contains('.'), F.col(column).cast(FloatType())
 					).otherwise(
@@ -100,6 +102,13 @@ def question3(df):
 	data = df.where(F.col('population') > 0)\
 			 .groupBy(F.col('communityname'))\
 			 .agg(F.max(F.col('population')).alias('population_by_community') )\
+			 .orderBy(F.col('population_by_community').desc())\
+			 .limit(1)
+	data.show()
+	print('--------------- The summ -------------')
+	data = df.where(F.col('population') > 0)\
+			 .groupBy(F.col('communityname'))\
+			 .agg(F.sum(F.col('population')).alias('population_by_community') )\
 			 .orderBy(F.col('population_by_community').desc())\
 			 .limit(1)
 	data.show()
@@ -148,17 +157,62 @@ def question6(df):
 	data.show()
 
 def question7(df):
-	pass
+	polcBudgtViolentCrimesCorr = df.stat.corr('PolicOperBudg', 'ViolentCrimesPerPop')
+	print("Correlação entre Orçamento Policial e Crimes violentos: \n",polcBudgtViolentCrimesCorr)
+
 def question8(df):
-	pass
+	whitePolcBudgt = df.stat.corr('PctPolicWhite', 'PolicOperBudg')
+	print("Correlação entre Porcentagem de policiais caucasianos e Orçamento Policial: \n", whitePolcBudgt)
+
 def question9(df):
-	pass
+	poplAndPolcBudgetCorr = df.stat.corr('population', 'PolicBudgPerPop')
+	print("Correlação entre População e Orçamento Policial: \n", poplAndPolcBudgetCorr)
+
 def question10(df):
-	pass
+	poplAndVlntCrimes = df.stat.corr('population', 'ViolentCrimesPerPop')
+	print("Correlação entre População e Número de crimes violentos: \n", poplAndVlntCrimes)
+
 def question11(df):
-	pass
+	medHouseIncomeVlntCrimesCorr = df.stat.corr('medIncome', 'ViolentCrimesPerPop')
+	print("Correlação entre Mediana do salário familiar e Número de crimes violentos: \n", medHouseIncomeVlntCrimesCorr)
+
 def question12(df):
-	pass
+	data = df.filter(F.col('ViolentCrimesPerPop')>0)
+	greatest_crimeperpopl_community = data.where(F.col('population')>0)\
+										  .groupBy(F.col('communityname'))\
+										  .agg(F.max(F.col('population') * F.col('ViolentCrimesPerPop') ).alias('crime_per_popl') )\
+										  .orderBy(F.col('crime_per_popl').desc())\
+										  .limit(10)\
+										  .collect()
+	for _row in greatest_crimeperpopl_community:
+		print("Raça predominante em: ", _row['communityname'].replace('city', ''))
+		data = df.filter(F.col('communityname') == _row['communityname'])
+		data = data.withColumn('max_pctRace', (
+			F.when(
+				(F.col('racepctblack') > F.col('racePctWhite')) &
+				(F.col('racepctblack') > F.col('racePctAsian')) &
+				(F.col('racepctblack') > F.col('racePctHisp')), 'Black'
+			).when(
+				(F.col('racePctWhite') > F.col('racepctblack')) &
+				(F.col('racePctWhite') > F.col('racePctAsian')) &
+				(F.col('racePctWhite') > F.col('racePctHisp')), 'Caucasian'
+			).when(
+				(F.col('racePctAsian') > F.col('racepctblack')) &
+				(F.col('racePctAsian') > F.col('racePctWhite')) &
+				(F.col('racePctAsian') > F.col('racePctHisp')), 'Asian'
+			).when(
+				(F.col('racePctHisp') > F.col('racepctblack')) &
+				(F.col('racePctHisp') > F.col('racePctAsian')) &
+				(F.col('racePctHisp') > F.col('racePctWhite')), 'Hisp'
+			)
+		))
+		result = data.groupBy(F.col('max_pctRace'))\
+					 .count()\
+					 .orderBy(F.col('count').desc())\
+					 .limit(1)\
+					 .first()['max_pctRace']
+		print('\t', result)
+
 
 def solve_questions(df, method_name, _method):
 	print("Questão", method_name[8:])
@@ -308,7 +362,7 @@ if __name__ == "__main__":
 
 	treated_df.show(10)
 
-	get_qa_summary()
+	get_qa_summary(treated_df)
 
 	online_retail_questions = {
 		"question1":  question1,
