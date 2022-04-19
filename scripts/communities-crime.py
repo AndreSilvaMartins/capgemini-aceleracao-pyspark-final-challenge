@@ -3,7 +3,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 
-from pyspark.ml import stat
+#from pyspark.ml import stat
 
 # REGEX PATTERNS ---
 REGEX_ALPHA     = r'[a-zA-Z]+'
@@ -85,14 +85,14 @@ def get_qa_summary(dataframe):
 
 #--------questions ------------
 def question1(df):
-	data = df.groupBy(F.col('communityname'))\
+	data = df.groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.format_number(F.sum(F.col('PolicOperBudg') ),2).alias('orcamento_policial') )\
 			 .orderBy(F.col('orcamento_policial').desc())\
 			 .limit(1)
 	data.show()
 
 def question2(df):
-	data = df.groupBy(F.col('community'),F.col('communityname'))\
+	data = df.groupBy(F.col('state'), F.col('community'),F.col('communityname'))\
 			 .agg(F.sum(F.col('ViolentCrimesPerPop')).alias('violent_crimes'))\
 			 .orderBy(F.col('violent_crimes').desc())\
 			 .limit(1)
@@ -100,14 +100,14 @@ def question2(df):
 
 def question3(df):
 	data = df.where(F.col('population') > 0)\
-			 .groupBy(F.col('communityname'))\
+			 .groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('population')).alias('population_by_community') )\
 			 .orderBy(F.col('population_by_community').desc())\
 			 .limit(1)
 	data.show()
 	print('--------------- The summ -------------')
 	data = df.where(F.col('population') > 0)\
-			 .groupBy(F.col('communityname'))\
+			 .groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.sum(F.col('population')).alias('population_by_community') )\
 			 .orderBy(F.col('population_by_community').desc())\
 			 .limit(1)
@@ -116,7 +116,7 @@ def question3(df):
 def question4(df):
 	print('Maior percentual de população negra.')
 	data = df.where(F.col('racepctblack') > 0)\
-			 .groupBy(F.col('communityname'))\
+			 .groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('racepctblack')).alias('blackplp_by_community_percent') )\
 			 .orderBy(F.col('blackplp_by_community_percent').desc())\
 			 .limit(1)
@@ -126,14 +126,14 @@ def question4(df):
 
 	print('Maior quantidade de população negra.')
 	data = df.where(F.col('racepctblack') > 0)\
-			 .groupBy(F.col('communityname'))\
+			 .groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('population') * F.col('racepctblack' ) ).alias('blackplp_by_community') )\
 			 .orderBy(F.col('blackplp_by_community').desc())\
 			 .limit(1)
 	data.show()
 
 def question5(df):
-	data = df.groupBy(F.col('communityname'))\
+	data = df.groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('pctWWage')).alias('max_salary'))\
 			 .orderBy(F.col('max_salary').desc())\
 			 .limit(1)
@@ -141,7 +141,7 @@ def question5(df):
 
 def question6(df):
 	print('Se considerarmos os jovens na idade de 12 a 21:')
-	data = df.groupBy(F.col('communityname'))\
+	data = df.groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('agePct12t21')).alias('max_youngplp'))\
 			 .orderBy(F.col('max_youngplp').desc())\
 			 .limit(1)
@@ -150,7 +150,7 @@ def question6(df):
 	print('-'*50)
 	
 	print('Se considerarmos os jovens na idade de 16 a 24:')
-	data = df.groupBy(F.col('communityname'))\
+	data = df.groupBy(F.col('state'), F.col('communityname'))\
 			 .agg(F.max(F.col('agePct16t24')).alias('max_youngplp'))\
 			 .orderBy(F.col('max_youngplp').desc())\
 			 .limit(1)
@@ -179,7 +179,7 @@ def question11(df):
 def question12(df):
 	data = df.filter(F.col('ViolentCrimesPerPop')>0)
 	greatest_crimeperpopl_community = data.where(F.col('population')>0)\
-										  .groupBy(F.col('communityname'))\
+										  .groupBy(F.col('state'), F.col('communityname'))\
 										  .agg(F.max(F.col('population') * F.col('ViolentCrimesPerPop') ).alias('crime_per_popl') )\
 										  .orderBy(F.col('crime_per_popl').desc())\
 										  .limit(10)\
